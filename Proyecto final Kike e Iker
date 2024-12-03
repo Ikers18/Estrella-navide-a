@@ -1,0 +1,271 @@
+.model small
+.stack
+.data
+    incx1 dw 0
+    incy1 dw 0
+    incx2 dw 0
+    incy2 dw 0 
+    incd1 dw 0
+    incd2 dw 0  
+    
+    x dw 0
+    y dw 0
+    ;Variables de X inical/final y Y inicial/final
+    x1 dw 90
+    y1 dw 60
+     
+    x2 dw 210
+    y2 dw 60
+    
+    colores db 1
+    contT db 200
+    
+    pospixel dw 0
+    resul dw 0
+.code
+   
+    main proc
+        
+        ;NOTA: cx y dx guardan las coordenadas para imprimir con 13h
+        
+        ;modo grafico
+        mov al, 13h
+        int 10h
+        
+        ;mover los datos de las variables a ds
+        mov ax, @data
+        mov ds, ax 
+        
+        loopc:
+        ;Primera linea
+        mov [x1], 90
+        mov [y1], 60
+        mov [x2], 210
+        mov [y2], 60
+        
+        mov ax, [x1]
+        mov bx, [y1]
+        mov cx, [x2]
+        mov dx, [y2]
+        call AlgLineas
+        
+        ;Segunda linea
+        mov [x1], 90
+        mov [y1], 60
+        mov [x2], 190
+        mov [y2], 120
+        
+        mov ax, [x1]
+        mov bx, [y1]
+        mov cx, [x2]
+        mov dx, [y2]
+        call AlgLineas
+        
+        ;Tercera linea
+        mov [x1], 150
+        mov [y1], 20
+        mov [x2], 190
+        mov [y2], 120
+        
+        mov ax, [x1]
+        mov bx, [y1]
+        mov cx, [x2]
+        mov dx, [y2]
+        call AlgLineas
+        
+        ;Cuarta linea
+        mov [x1], 150
+        mov [y1], 20
+        mov [x2], 110
+        mov [y2], 120
+        
+        mov ax, [x1]
+        mov bx, [y1]
+        mov cx, [x2]
+        mov dx, [y2]
+        call AlgLineas
+        
+        ;Quinta linea
+        mov [x1], 110
+        mov [y1], 120
+        mov [x2], 210
+        mov [y2], 60
+        
+        mov ax, [x1]
+        mov bx, [y1]
+        mov cx, [x2]
+        mov dx, [y2]
+        call AlgLineas 
+        
+        ; Espera un momento para cambiar el color
+        mov contT, 200  ; Reiniciamos el contador
+        salto1: 
+        inc contT
+        cmp contT, 30
+        jne salto1
+
+        ; Cambia entre colores 
+        inc colores
+        cmp colores, 14  
+        je siguiente
+        cmp colores, 15 
+        je siguiente
+        cmp colores, 10  
+        jne siguiente  
+
+        mov colores, 12 
+
+        siguiente:
+        jmp loopc
+        
+        .exit
+    main endp 
+    
+    AlgLineas PROC
+        ;delta X
+        sub cx, ax      ;Se resta a X final la X inicial y se guarda en CX
+        cmp cx, 0       ;Se compara para revisas que el valor sea igual o mayor que 0
+        jge positivoX
+        neg cx          ;Si el valor es negativo, lo negamos para volverlo positivo
+        positivoX:
+        mov si, cx ;se guarda delta X en si
+        
+        ;delta Y
+        sub dx, bx      ;Se resta la Y final a la Y inicial y se guarda en dx
+        cmp dx, 0       ;Se compara para revisar que el valor sea igual o mayor a 0
+        jge positivoY
+        neg dx          ;Si el valor es negativo, lo negamos para volverlo positivo
+        positivoY:
+        mov di, dx ;se guarda delta Y en di
+        
+        ;comparacion para determinar que delta es mayor
+        cmp si, di
+        jl deltaY  ;Brinca a delta Y si es mayor
+        
+        ;calculos si delta X es mayor
+        inc si    ;Se incrementa Delta X
+        mov pospixel, si  ;Guardamos el numero de pixel en la variable
+         
+        push di     ;Guardamos el valor de delta Y
+        shl di, 1    ;Multiplicamos Delta Y por 2
+        sub di, si  ;2dy - dx
+        mov resul, di  ;El resultado se guarda en resul
+        pop di      ;Retornamos el valor de delta Y
+         
+        push di     ;Guardamos el valor de delta Y
+        shl di, 1    ;Multiplicamos delta Y por 2
+        mov incd1, di  ;Lo guardamos en la variable incd1
+        pop di      ;Retornamos el valor de delta Y
+        
+        push di     ;Guardamos el valor de delta Y
+        sub di, si     ;Restamos a Delta Y , Delta X
+        shl di, 1      ;Multiplicamos el resultado por 2
+        mov incd2, di  ;Lo guardamos en incd2
+        pop di      ;Retornamos el valor de delta Y
+        ;Determina que se debe incrementar en las coordenadas
+        mov incx1, 1
+        mov incx2, 1
+        mov incy1, 0
+        mov incy2, 1
+        
+        jmp fincomparacion ;Brinca a fin comparacion
+                
+        deltaY:
+        
+        ;calculos si delta Y es mayor
+        inc di           ;Incrementa delta Y
+        mov pospixel, di ;Lo guarda en pospixel
+         
+        push si          ;Guardamos delta x
+        shl si, 1    ;Lo multiplicamos por 2
+        sub si, di;2dx - dy
+        mov resul, si   ;Se guarda en resul
+        pop si          ;Retornamos delta X
+         
+        push si
+        shl si, 1       ;Multiplicamos delta x por 2
+        mov incd1, si   ;Lo guardamos en incd1
+        pop si
+        
+        push si
+        sub si, di      ;Restamos a delta x, delta y
+        shl si, 1       ;Lo multiplicamos por 2
+        mov incd2, si   ;Se guarda en la variable incd2
+        pop si
+        
+        ;Determina que se debe incrementar en las coordenadas
+        mov incx1, 0
+        mov incx2, 1
+        mov incy1, 1
+        mov incy2, 1  
+        
+        fincomparacion:
+        
+        mov ax, x1     ;Movemos x inical a ax
+        cmp ax, x2     ;La comparamos con la x final
+        jna negacion   ;Salta si es menor o igual a x2
+            neg incx1  ;Niega incx1 y incx2 en dado caso que no sea menor o igual 
+            neg incx2
+        negacion:    
+        
+        mov bx, y1  ;Mueve Y inicial a bx
+        cmp bx, y2  ;Lo compara con Y final
+        jna negacion1 ;Salta si es menor o igual a y2
+        neg incy1     ;Niega las variables incy1 e incy2
+        neg incy2
+        negacion1:
+        
+        mov ax, x1    ;Mueve x inicial a la variable x mediante el registro ax
+        mov x, ax
+        
+        mov bx, y1   ;Mueve y inicial a la variable y mediante el registro bx
+        mov y, bx
+        ;Limpiamos los registros cx y dx
+        xor cx, cx
+        xor dx, dx
+        ;Inicializa el contador de pixeles
+        mov si, 1
+        loopfor: 
+        ;Mueve los varoles de x y y a cx y dx 
+        mov cx, x
+        mov dx, y
+        ;Imprime el color asignado en las posiciones de dx y cx
+        mov ah, 0Ch
+        mov al, colores
+        int 10h
+        
+        ;si resul < 0
+        cmp resul, 0
+        jge debajo  ;Si resul es mayor o igual que 0, salta a debajo
+         
+        mov bp, resul ;Movemos resul a Bp
+        add bp, incd1 ;Le sumamos a Bp la variable incd1
+        mov resul, bp ;Y lo movemos a la variable resul
+        
+        add cx, incx1 ;Sumamos a cx la variable incx1
+        mov x, cx     ;Esto lo guardamos en x
+        
+        add dx, incy1 ;Sumamos a dx la variable incy1
+        mov y, dx     ;Lo guardamos en y
+        jmp omitir    ;Brincamos a omitir
+        
+        debajo:
+        ;si resul >=0
+        mov bp, resul  ;Movemos resul a Bp 
+        add bp, incd2  ;Sumamos a Bp lo que esta en incd2
+        mov resul, bp  ;Lo guardamos a resul
+        
+        add cx, incx2  ;Sumamos a cx, la variable incx2
+        mov x, cx      ;La guardamos en x para poner la posicion actual
+        
+        add dx, incy2  ;Sumamos a dx, la variable incy2
+        mov y, dx      ;La guardamos en y para poner la posicion actual
+        
+        omitir:
+        
+        inc si          ;Incrementamos el contador de pixeles
+        cmp si, pospixel ;Lo compara con la posicion que tiene que llegar
+        jne loopfor     ;Si no es igual, que brinque a loopfor
+        ret
+    AlgLineas ENDP
+end
